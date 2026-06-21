@@ -21,6 +21,14 @@ uint8_t selected;
 #define BUFFER_SIZE 20
 float temperature = 0;
 float tempBuffer[BUFFER_SIZE];
+int plotStartX = 8;
+int plotStartY = 120;
+int plotHeight = 100;
+int plotWeight = 140;
+int stepX = 0;
+float prevY = 0;
+int prevX = 0;
+
 
 void displayInit(){
   tft.initR(INITR_BLACKTAB); 
@@ -66,6 +74,26 @@ void collectTempIntoBuffer(float temperature, float *buffer){
   }
 }
 
+void drawPlot(float temperature){
+  int plotStepX = plotWeight/BUFFER_SIZE;
+  float plotStepY = 2;
+  float currentY = plotStartY - temperature * plotStepY;
+  int currentX = plotStartX + plotStepX * stepX;
+  if(stepX == BUFFER_SIZE){
+    stepX = 0;
+    tft.fillRect(0, 40, 160, 80, ST77XX_WHITE);
+    prevX = 0;
+    prevY = 0;
+    currentX = 0;
+  }
+  stepX++;
+  if(prevY != 0 && prevX != 0){
+    tft.drawLine(prevX, prevY, currentX, currentY, ST77XX_RED);
+  }
+  prevY = currentY;
+  prevX = currentX;
+}
+
 void setup() {
   Serial.begin(9600);
   selected = ds.select(address);
@@ -74,11 +102,10 @@ void setup() {
 
 void loop() {
   if (selected) {
-
-    //zebranie uśrednionej temperatury z 5 pomiarów co sekundę
     temperature = getMeanTemperature();
-    updateTemp(temperature);
+    //updateTemp(temperature);
     collectTempIntoBuffer(temperature, tempBuffer);
+    drawPlot(temperature);
   }
   delay(100);
 }
