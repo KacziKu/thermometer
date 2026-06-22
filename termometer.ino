@@ -26,8 +26,9 @@ int plotStartY = 120;
 int plotHeight = 100;
 int plotWeight = 140;
 int stepX = 0;
-float prevY = 0;
-int prevX = 0;
+bool plotFirstStep = true;
+float prevY;
+int prevX;
 
 
 void displayInit(){
@@ -62,15 +63,19 @@ void updateTemp(float temperature){
 }
 
 void collectTempIntoBuffer(float temperature, float *buffer){
-  static uint16_t sample = 0;
-  buffer[sample++] = temperature;
-  if(sample >= BUFFER_SIZE){
+  static uint16_t head = 0;
+  static uint16_t count = 0;
+  buffer[head] = temperature;
+  head = (head + 1) % BUFFER_SIZE;
+  if(count < BUFFER_SIZE){
+    count++;
+  }
+  else{
     for(int i = 0; i < 10; i++){
-      Serial.println("Temperatura z bufora: ");
-      Serial.println(buffer[i]);
-      delay(100);
+      Serial.print("Temperatura z bufora: ");
+      Serial.println(buffer[head+i]);
     }
-    sample = 0;  
+    count = 0;
   }
 }
 
@@ -81,23 +86,29 @@ void drawPlot(float temperature){
   int currentX = plotStartX + plotStepX * stepX;
   if(stepX == BUFFER_SIZE){
     stepX = 0;
-    tft.fillRect(0, 40, 160, 80, ST77XX_WHITE);
-    prevX = 0;
-    prevY = 0;
-    currentX = 0;
+    tft.fillRect(plotStartX, plotStartY - plotHeight, plotWeight, plotHeight, ST77XX_WHITE);
+    currentX = plotStartX;
+    plotFirstStep = true;
   }
   stepX++;
-  if(prevY != 0 && prevX != 0){
+  if(!plotFirstStep){
     tft.drawLine(prevX, prevY, currentX, currentY, ST77XX_RED);
   }
   prevY = currentY;
   prevX = currentX;
+  plotFirstStep = false;
+}
+
+void drawAxis(){
+  tft.drawLine(plotStartX, plotStartY, plotStartX + plotWeight, plotStartY, ST77XX_BLACK);
+  tft.drawLine(plotStartX - 1, plotStartY, plotStartX - 1, plotStartY - plotHeight,ST77XX_BLACK);
 }
 
 void setup() {
   Serial.begin(9600);
   selected = ds.select(address);
   displayInit();
+  drawAxis();
 }
 
 void loop() {
