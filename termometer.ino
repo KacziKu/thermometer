@@ -19,17 +19,31 @@ uint8_t address[] = {0x28, 0x0E, 0x6E, 0x22, 0x00, 0x00, 0x00, 0xC9};
 uint8_t selected;
 
 #define BUFFER_SIZE 20
-float temperature = 0;
-float tempBuffer[BUFFER_SIZE];
-int plotStartX = 8;
-int plotStartY = 120;
-int plotHeight = 100;
-int plotWeight = 140;
+
+struct temperatureHistory{
+  float tempBuffer[BUFFER_SIZE];
+  uint16_t head;
+  uint16_t count;
+};
+
+temperatureHistory history = {};
+
+struct plotConfig{
+  int startX;
+  int startY;
+  int height;
+  int weight;
+};
+
+plotConfig plot = {
+  8,
+  120,
+  100,
+  140,
+};
+
 int stepX = 0;
 bool plotFirstStep = true;
-float prevY;
-int prevX;
-
 
 void displayInit(){
   tft.initR(INITR_BLACKTAB); 
@@ -63,31 +77,31 @@ void updateTemp(float temperature){
 }
 
 void collectTempIntoBuffer(float temperature, float *buffer){
-  static uint16_t head = 0;
-  static uint16_t count = 0;
-  buffer[head] = temperature;
-  head = (head + 1) % BUFFER_SIZE;
-  if(count < BUFFER_SIZE){
-    count++;
+  buffer[history.head] = temperature;
+  history.head = (history.head + 1) % BUFFER_SIZE;
+  if(history.count < BUFFER_SIZE){
+    history.count++;
   }
   else{
     for(int i = 0; i < 10; i++){
       Serial.print("Temperatura z bufora: ");
-      Serial.println(buffer[head+i]);
+      Serial.println(buffer[(history.head + i)%BUFFER_SIZE]);
     }
-    count = 0;
+    history.count = 0;
   }
 }
 
 void drawPlot(float temperature){
-  int plotStepX = plotWeight/BUFFER_SIZE;
+  int plotStepX = plot.weight/BUFFER_SIZE;
   float plotStepY = 2;
-  float currentY = plotStartY - temperature * plotStepY;
-  int currentX = plotStartX + plotStepX * stepX;
+  static float prevY;
+  static int prevX;
+  float currentY = plot.startY - temperature * plotStepY;
+  int currentX = plot.startX + plotStepX * stepX;
   if(stepX == BUFFER_SIZE){
     stepX = 0;
-    tft.fillRect(plotStartX, plotStartY - plotHeight, plotWeight, plotHeight, ST77XX_WHITE);
-    currentX = plotStartX;
+    tft.fillRect(plot.startX, plot.startY - plot.height, plot.weight, plot.height, ST77XX_WHITE);
+    currentX = plot.startX;
     plotFirstStep = true;
   }
   stepX++;
@@ -100,8 +114,8 @@ void drawPlot(float temperature){
 }
 
 void drawAxis(){
-  tft.drawLine(plotStartX, plotStartY, plotStartX + plotWeight, plotStartY, ST77XX_BLACK);
-  tft.drawLine(plotStartX - 1, plotStartY, plotStartX - 1, plotStartY - plotHeight,ST77XX_BLACK);
+  tft.drawLine(plot.startX, plot.startY, plot.startX + plot.weight, plot.startY, ST77XX_BLACK);
+  tft.drawLine(plot.startX - 1, plot.startY, plot.startX - 1, plot.startY - plot.height, ST77XX_BLACK);
 }
 
 void setup() {
@@ -113,9 +127,9 @@ void setup() {
 
 void loop() {
   if (selected) {
-    temperature = getMeanTemperature();
+    float temperature = getMeanTemperature();
     //updateTemp(temperature);
-    collectTempIntoBuffer(temperature, tempBuffer);
+    collectTempIntoBuffer(temperature, history.tempBuffer);
     drawPlot(temperature);
   }
   delay(100);
