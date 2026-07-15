@@ -16,10 +16,6 @@ void displayInit() {
   tft.initR(INITR_BLACKTAB);
   tft.fillScreen(ST77XX_WHITE);
   tft.setRotation(1);
-  tft.setCursor(10, 10);
-  tft.setTextSize(2);
-  tft.setTextColor(ST77XX_BLACK);
-  tft.println("Temperature:");
 }
 
 void drawAxis() {
