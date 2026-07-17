@@ -1,19 +1,35 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <time.h>
 
 #include "Display.h"
 #include "Sensor.h"
 #include "Buffer.h"
-#include "icons.h"
 
 struct CycleBuffer buff = {};
 
+const char* ssid = "MAKLAREN44";
+const char* password = "maklaren44";
+const char* ntpServer = "time.google.com";
+
+ struct tm timeinfo;
+
 void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi OK");
+
+  configTime(3600, 3600, ntpServer); 
   ds.begin();
   displayInit();
   //drawAxis();
-  tft.drawBitmap(15, 15, epd_bitmap_termometer, 16, 16, ST7735_WHITE, ST7735_BLACK);
-  tft.drawBitmap(45, 15, epd_bitmap_calendar, 16, 16, ST7735_WHITE, ST7735_BLACK);
-  tft.drawBitmap(75, 15, epd_bitmap_clock, 16, 16, ST7735_WHITE, ST7735_BLACK);
+  drawIcons();
 }
 
 void loop() {
@@ -21,5 +37,14 @@ void loop() {
   addToBuffer(temperature, &buff);
   //logBuff(&buff);
   //drawPlot(&buff);
-  delay(100);
+    if(getLocalTime(&timeinfo))
+  {
+    writeTime(timeinfo);
+    writeData(timeinfo);
+  }
+  writeTemperature(temperature);
+  //delay(100);
 }
+
+
+

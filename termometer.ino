@@ -1,4 +1,4 @@
-#include <DS18B20.h>
+//#include <DS18B20.h>
 #include <OneWire.h>
 #include <SPI.h>
 #include <Adafruit_ST7735.h>
@@ -14,7 +14,7 @@
 
 Adafruit_ST7735 tft = Adafruit_ST7735(CS_PIN, DC_PIN, RST_PIN);
 
-DS18B20 ds(4);
+//DS18B20 ds(4);
 uint8_t address[] = {0x28, 0x0E, 0x6E, 0x22, 0x00, 0x00, 0x00, 0xC9};
 uint8_t selected;
 
@@ -51,7 +51,7 @@ float getMeanTemperature(){
   float temperature = 0;
   float tabTemperature[5];
     for(int i = 0; i < 5; i++){
-      tabTemperature[i] = ds.getTempC();
+      //tabTemperature[i] = ds.getTempC();
       Serial.println(tabTemperature[i]);
       temperature += tabTemperature[i];
       delay(100);
@@ -113,7 +113,7 @@ void drawAxis(){
 
 void setup() {
   Serial.begin(9600);
-  selected = ds.select(address);
+  //selected = ds.select(address);
   displayInit();
   drawAxis();
 }

@@ -12,6 +12,9 @@ extern Adafruit_ST7735 tft;
 
 void displayInit();
 void drawAxis();
-void updateValue(float value);
 void drawPlot(struct CycleBuffer* buffer);
 void clearPlot();
+void drawIcons();
+void writeTime(struct tm time);
+void writeData(struct tm time);
+void writeTemperature(float value);
