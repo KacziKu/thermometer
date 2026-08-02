@@ -26,5 +26,5 @@ void drawIcons();
 void writeTime(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size);
 void writeData(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size);
 void writeTemperature(float value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size);
-void drawMarker(int16_t move);
+uint8_t drawMarker(int16_t move);
 void drawHistoryTemplate();

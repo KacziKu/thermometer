@@ -34,6 +34,18 @@ void drawAxis() {
   tft.drawLine(PLOT_START_X - 1, PLOT_START_Y,
                PLOT_START_X - 1, PLOT_START_Y - PLOT_HEIGHT,
                ST77XX_BLACK);
+
+  tft.drawBitmap(PLOT_START_X + PLOT_WIDTH + 1, PLOT_0 - 2,
+                  epd_bitmap_arrow_plot_left,
+                  5,
+                  5,
+                  ST7735_WHITE, ST7735_BLACK);
+
+  tft.drawBitmap(PLOT_START_X - 3, PLOT_0 - 75,
+                  epd_bitmap_arrow_plot_up,
+                  5,
+                  5,
+                  ST7735_WHITE, ST7735_BLACK);
 }
 
 void clearPlot() {
@@ -124,7 +136,7 @@ void writeTemperature(float value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, u
   tft.print(buf);
 }
 
-void drawMarker(int16_t move) {
+uint8_t drawMarker(int16_t move) {
   static uint8_t x;
   x += move;
   if(x > PLOT_START_X + PLOT_WIDTH) {
@@ -133,7 +145,8 @@ void drawMarker(int16_t move) {
   else if(x < PLOT_START_X) {
     x = PLOT_START_X;
   }
-  tft.drawFastVLine(x, PLOT_START_Y - PLOT_HEIGHT, PLOT_HEIGHT, ST7735_BLUE);
+  tft.drawFastVLine(x, PLOT_START_Y - PLOT_HEIGHT + 1, PLOT_HEIGHT, ST7735_BLUE);
+  return x - PLOT_START_X;
 }
 
 void drawHistoryTemplate() {

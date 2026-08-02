@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 144
 
 struct CycleBuffer {
     uint16_t head;
