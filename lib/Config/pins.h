@@ -8,3 +8,7 @@
 #define MISO_PIN 19
 
 #define ONE_WIRE_BUS 4
+
+#define ENCODER_SW  15
+#define ENCODER_DT  16
+#define ENCODER_CLK 17

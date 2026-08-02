@@ -15,7 +15,7 @@ float getMeanValue(int amount) {
     tab[i] = ds.getTempCByIndex(0);
     //Serial.println(tab[i]);
     value += tab[i];
-    delay(100);
+    delay(50);
   }
   value = value / amount;
   //Serial.println("Mean value: " + String(temperature));
