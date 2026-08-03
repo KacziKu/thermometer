@@ -13,10 +13,8 @@ float getMeanValue(int amount) {
   for (int i = 0; i < amount; i++) {
     ds.requestTemperatures();
     tab[i] = ds.getTempCByIndex(0);
-    //Serial.println(tab[i]);
     value += tab[i];
   }
   value = value / amount;
-  //Serial.println("Mean value: " + String(temperature));
   return value;
 }
