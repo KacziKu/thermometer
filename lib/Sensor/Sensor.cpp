@@ -3,18 +3,21 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 #include "pins.h"
+#include "Debug.h"
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature ds(&oneWire);
 
-float getMeanValue(int amount) {
+int16_t getMeanValue(int amount) {
   float value = 0;
-  float tab[amount];
+  int16_t result = 0;
   for (int i = 0; i < amount; i++) {
     ds.requestTemperatures();
-    tab[i] = ds.getTempCByIndex(0);
-    value += tab[i];
+    value += ds.getTempCByIndex(0);
   }
   value = value / amount;
-  return value;
+  DEBUG_PRINTF("float temperature: %f\n", value);
+  result = value * 100;
+  DEBUG_PRINTF("int16_t temperature: %d\n", result);
+  return result;
 }

@@ -121,9 +121,10 @@ void writeData(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8
   }
 }
 
-void writeTemperature(float value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size) {
+void writeTemperature(int16_t value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size) {
+  float temperature = value/100.2f;
   char buf[9];
-  snprintf(buf, sizeof(buf), "%.2f C", value);
+  snprintf(buf, sizeof(buf), "%.2f C", temperature);
   tft.setCursor(x, y);
   tft.fillRect(x, y, w, h, ST77XX_WHITE);
   tft.setTextSize(size);

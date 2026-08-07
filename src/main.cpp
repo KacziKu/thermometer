@@ -12,22 +12,25 @@
 #include "Encoder.h"
 #include "wifi.h"
 #include "icons.h"
+#include "Debug.h"
 
 struct CycleBuffer buff = {};
 Encoder encoder(ENCODER_CLK, ENCODER_DT, ENCODER_SW);
 struct tm timeinfo;
 uint8_t view = 0;
 uint8_t markerPosition;
-float temperature = 28;
+//int16_t temperature = 2800;
 int16_t move = 0;
 
 QueueHandle_t recordQueue;
+QueueHandle_t temperatureQueue;
 
 
 void sampleMeasure(void *pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
   while(1) {
-    float temperature = getMeanValue(3);
+    DEBUG_PRINTLN("Zbieram pomiary do rekordu");
+    int16_t temperature = getMeanValue(3);
     struct tm timeInfo;
     getLocalTime(&timeInfo); 
     time_t timeSample = mktime(&timeinfo);
@@ -35,9 +38,11 @@ void sampleMeasure(void *pvParameters) {
     Record record;
     record.temperature = temperature;
     record.time = timeSample;
+    DEBUG_PRINTF("Temperatura: %d, Czas: %d\n", record.temperature, record.time);
     
     xQueueSend(recordQueue, &record, portMAX_DELAY);
-    xTaskDelayUntil(&lastWakeTime, 3000000);
+    xQueueSend(temperatureQueue, &temperature, portMAX_DELAY);
+    xTaskDelayUntil(&lastWakeTime, 3000);
   }
 }
 
@@ -48,7 +53,9 @@ void flashWrite(void *pvParameters) {
 
     int address = getCurrentAddress();
     int sectorAddress = getNextSectorToErase(address);
-    clearSector(sectorAddress);
+    if(sectorAddress != -1) {
+      clearSector(sectorAddress);
+    }
     writeRecord(address, &record);
   }
 }
@@ -65,6 +72,8 @@ void encoderTask(void *pvParameters) {
 
 void displayTask(void *pvParameters) {
   while(1) {
+    int16_t temperature;
+    xQueueReceive(temperatureQueue, &temperature, portMAX_DELAY);
     switch(view) {
     case MAIN:
       drawIcons();
@@ -99,7 +108,7 @@ void setup() {
   encoder.enableISR();
 
   flashInit();
-  if(isFormatted()) {
+  if(!isFormatted()) {
     flashFormat();
   }
 
@@ -117,6 +126,8 @@ void setup() {
   displayInit();
 
   recordQueue = xQueueCreate(10, sizeof(Record));
+  temperatureQueue = xQueueCreate(10, sizeof(int16_t));
+
   xTaskCreate(sampleMeasure, "Sample Measure", 4096, NULL, 0, NULL);
   xTaskCreate(flashWrite, "Flash write", 4096, NULL, 0, NULL);
   xTaskCreate(encoderTask, "Encoder Task", 1024, NULL, 0, NULL);
