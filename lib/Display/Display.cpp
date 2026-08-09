@@ -83,8 +83,8 @@ void drawPlot(struct CycleBuffer* buffer) {
     int x1 = PLOT_START_X + (i - 1) * PLOT_STEP_X;
     int x2 = PLOT_START_X + i * PLOT_STEP_X;
 
-    int y1 = PLOT_0 - buffer->buffer[idx1] * PLOT_STEP_Y;
-    int y2 = PLOT_0 - buffer->buffer[idx2] * PLOT_STEP_Y;
+    int y1 = PLOT_0 - buffer->buffer[idx1]/100.2f * PLOT_STEP_Y;
+    int y2 = PLOT_0 - buffer->buffer[idx2]/100.2f * PLOT_STEP_Y;
 
     DEBUG_PRINTF("    P1(%d, %d), P2(%d, %d)\n", x1, y1, x2, y2);
 
@@ -139,6 +139,7 @@ void writeTemperature(int16_t value, uint8_t x, uint8_t y, uint8_t w, uint8_t h,
 
 uint8_t drawMarker(int16_t move) {
   static uint8_t x;
+  tft.drawFastVLine(x, PLOT_START_Y - PLOT_HEIGHT + 1, PLOT_HEIGHT, ST7735_WHITE);
   x += move;
   if(x > PLOT_START_X + PLOT_WIDTH) {
     x = PLOT_START_X + PLOT_WIDTH;
@@ -147,7 +148,7 @@ uint8_t drawMarker(int16_t move) {
     x = PLOT_START_X;
   }
   tft.drawFastVLine(x, PLOT_START_Y - PLOT_HEIGHT + 1, PLOT_HEIGHT, ST7735_BLUE);
-  return x - PLOT_START_X;
+  return (x - PLOT_START_X)/PLOT_STEP_X;
 }
 
 void drawHistoryTemplate() {

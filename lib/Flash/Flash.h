@@ -5,7 +5,9 @@
 
 #define SECTOR_COUNT 15
 #define SECTOR_SIZE 0x1000
+#define FIRST_ADDRESS 0x1000
 #define EMPTY_RECORD 0xFFFFFFFF
+#define LAST_ADDRESS 0xFFF8
 
 struct Record {
     uint32_t time;
@@ -30,4 +32,5 @@ int getNextSectorToErase(uint32_t address);
 void clearSector(uint32_t address);
 void findPartition();
 void readRecord(uint32_t address, Record *record);
+uint16_t recordCount();
 

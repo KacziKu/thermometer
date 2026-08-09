@@ -10,6 +10,6 @@ struct CycleBuffer {
     float buffer[BUFFER_SIZE];
 };
 
-void addToBuffer(float value, struct CycleBuffer* buff);
+void addToBuffer(int16_t value, struct CycleBuffer* buff);
 
 void logBuff(struct CycleBuffer* buff);

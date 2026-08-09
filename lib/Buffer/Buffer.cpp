@@ -1,7 +1,7 @@
 #include "Buffer.h"
 #include <stdio.h>
 
-void addToBuffer(float value, struct CycleBuffer *buff) {
+void addToBuffer(int16_t value, struct CycleBuffer *buff) {
   buff->buffer[buff->head] = value;
   buff->head = (buff->head + 1) % BUFFER_SIZE;
   if (buff->count < BUFFER_SIZE) {

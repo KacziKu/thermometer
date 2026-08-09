@@ -154,3 +154,28 @@ void readRecord(uint32_t address, Record *record) {
     DEBUG_PRINTF("Temperature: %d\n", record->temperature);
     DEBUG_PRINTF("Time: %d\n", record->time);
 }
+
+uint16_t recordCount() {
+    uint32_t address = getCurrentAddress();
+    uint16_t count = 0;
+    Record record;
+    readRecord(LAST_ADDRESS, &record);
+    //pierwsze zapełnienie pamięci, albo sektor 15 jest wyczyszczony
+    if(record.time == EMPTY_RECORD) {
+      if(address == FIRST_ADDRESS) {
+        count = 0;
+      }
+      else {
+        count = (address - FIRST_ADDRESS)/sizeof(Record);
+      }
+    }
+    //pamięć w pełni zapełniona i jest kołowo
+    else {
+        uint8_t currentSektor = address/SECTOR_SIZE;
+        uint16_t NumberOfRecordsInSector = SECTOR_SIZE/sizeof(Record);
+        count = (currentSektor - 1) * NumberOfRecordsInSector + 
+                    ((address - (currentSektor * SECTOR_SIZE))/sizeof(Record));
+    }
+    DEBUG_PRINTF("Liczba zapisanych rekordów: %d\n", count);
+    return count;
+}

@@ -6,4 +6,4 @@
 extern OneWire oneWire;
 extern DallasTemperature ds;
 
-int16_t getMeanValue(int amount);
+int16_t getTemperature();
