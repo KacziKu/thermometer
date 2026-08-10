@@ -28,3 +28,4 @@ void writeData(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8
 void writeTemperature(int16_t value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size);
 uint8_t drawMarker(int16_t move);
 void drawHistoryTemplate();
+void changeDate(struct tm *time, int16_t move);

@@ -179,3 +179,39 @@ uint16_t recordCount() {
     DEBUG_PRINTF("Liczba zapisanych rekordów: %d\n", count);
     return count;
 }
+
+void getDayStatistic(struct tm data, int16_t *maximum, int16_t *minimum) {
+    int16_t min = -50;
+    int16_t max = -50;
+
+    struct tm startDay;
+    startDay = data;
+    startDay.tm_hour = 0;
+    startDay.tm_min = 0;
+    startDay.tm_sec = 0;
+    time_t start = mktime(&startDay);
+
+    struct tm endDay;
+    endDay = startDay;
+    time_t end = mktime(&endDay);
+    uint32_t SecInDay = 3600 * 24;
+    end -= SecInDay;
+
+    Record record;
+    for(int i = FIRST_ADDRESS; i <= LAST_ADDRESS; i += sizeof(Record)) {
+       readRecord(i, &record);
+       if(record.time >= start && record.time <= end) {
+            if(max < record.temperature) {
+                max = record.temperature;
+            }
+            if(min > record.temperature) {
+                min = record.temperature;
+            }
+       }
+       *maximum = max;
+       *minimum = min;
+    }
+
+
+
+}

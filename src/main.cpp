@@ -14,7 +14,8 @@
 #include "icons.h"
 #include "Debug.h"
 
-struct CycleBuffer buff = {};
+struct CycleBuffer temperatureBuff = {};
+struct CycleBuffer timeBuff = {};
 Encoder encoder(ENCODER_CLK, ENCODER_DT, ENCODER_SW);
 struct tm timeinfo;
 volatile uint8_t view = 0;
@@ -30,6 +31,7 @@ volatile int16_t move = 0;
 QueueHandle_t recordQueue;
 TaskHandle_t displayTaskHandle = NULL;
 TimerHandle_t clockTimer;
+SemaphoreHandle_t flashMutex;
 
 void clockTimerCallback(TimerHandle_t timer) {
     xTaskNotify(displayTaskHandle, EVENT_TIME_UPDATE, eSetBits);
@@ -43,7 +45,7 @@ void sampleMeasure(void *pvParameters) {
     int16_t temperature = getTemperature();
     struct tm timeInfo;
     getLocalTime(&timeInfo); 
-    time_t timeSample = mktime(&timeinfo);
+    time_t timeSample = mktime(&timeInfo);
 
     Record record;
     record.temperature = temperature;
@@ -51,7 +53,8 @@ void sampleMeasure(void *pvParameters) {
     DEBUG_PRINTF("Temperatura: %d, Czas: %d\n", record.temperature, record.time);
     
     currentTemperature = record.temperature;
-    addToBuffer(currentTemperature, &buff);
+    addToBuffer(currentTemperature, &temperatureBuff);
+    addToBuffer(record.time, &timeBuff);
 
     xQueueSend(recordQueue, &record, portMAX_DELAY);
     xTaskNotify(displayTaskHandle, EVENT_NEW_TEMPERATURE, eSetBits);
@@ -65,13 +68,15 @@ void flashWrite(void *pvParameters) {
     Record record;
     xQueueReceive(recordQueue, &record, portMAX_DELAY);
 
+    xSemaphoreTake(flashMutex, portMAX_DELAY);
     int address = getCurrentAddress();
     int sectorAddress = getNextSectorToErase(address);
     if(sectorAddress != -1) {
       clearSector(sectorAddress);
     }
     writeRecord(address, &record);
-    recordCount();
+
+    xSemaphoreGive(flashMutex);
   }
 }
 
@@ -101,6 +106,7 @@ void displayTask(void *pvParameters) {
       if(events & (EVENT_TIME_UPDATE | EVENT_NEW_TEMPERATURE | EVENT_VIEW_CHANGE)) {
         drawIcons();
         writeTemperature(currentTemperature, 40, 95, 100, 25, 2);
+        struct tm timeinfo;
         getLocalTime(&timeinfo);
         writeData(timeinfo, 40, 55, 100, 16, 2);
         writeTime(timeinfo, 40, 15, 100, 16, 2);
@@ -110,22 +116,34 @@ void displayTask(void *pvParameters) {
     case PLOT:
       if(events & (EVENT_NEW_TEMPERATURE | EVENT_VIEW_CHANGE)) {
         drawAxis();
-        drawPlot(&buff);
+        drawPlot(&temperatureBuff);
       }
       if(events & EVENT_ENCODER) {
         drawAxis();
         markerPosition = drawMarker(move);
-        writeTemperature(buff.buffer[markerPosition], 50, 5, 80, 15, 1);
-        writeTime(timeinfo, 105, 5, 80, 15, 1);
+        struct tm timePlot;
+        time_t timeSec = timeBuff.buffer[markerPosition];
+        localtime_r(&timeSec, &timePlot);
+        writeTemperature(temperatureBuff.buffer[markerPosition], 50, 5, 80, 15, 1);
+        writeTime(timePlot, 105, 5, 80, 15, 1);
       }
       break;
 
     case HISTORY:
       if(events & (EVENT_ENCODER | EVENT_VIEW_CHANGE)) {
+        struct tm timeHistory;
+        getLocalTime(&timeHistory);
+        changeDate(&timeHistory, move);
         drawHistoryTemplate();
-        writeData(timeinfo, 35, 8, 98, 16, 2);
-        writeTemperature(currentTemperature, 75, 58, 55, 15, 1);
-        writeTemperature(currentTemperature, 75, 83, 55, 15, 1);
+        writeData(timeHistory, 35, 8, 98, 16, 2);
+
+        int16_t maxTemperature;
+        int16_t minTemperature;
+        xSemaphoreTake(flashMutex, portMAX_DELAY);
+        getDayStatistic(timeHistory, &maxTemperature, &minTemperature);
+        xSemaphoreGive(flashMutex);
+        writeTemperature(maxTemperature, 75, 58, 55, 15, 1);
+        writeTemperature(minTemperature, 75, 83, 55, 15, 1);
       }
       break;
     }
@@ -160,6 +178,7 @@ void setup() {
   clockTimer = xTimerCreate("Clock Timer", pdMS_TO_TICKS(1000), pdTRUE,NULL, clockTimerCallback);
 
   xTimerStart(clockTimer, 0);
+  flashMutex = xSemaphoreCreateMutex();
 
   xTaskCreate(sampleMeasure, "Sample Measure", 4096, NULL, 0, NULL);
   xTaskCreate(flashWrite, "Flash write", 4096, NULL, 0, NULL);

@@ -33,4 +33,5 @@ void clearSector(uint32_t address);
 void findPartition();
 void readRecord(uint32_t address, Record *record);
 uint16_t recordCount();
+void getDayStatistic(struct tm data, int16_t *maximum, int16_t *minimum);
 

@@ -99,18 +99,15 @@ void drawIcons() {
 }
 
 void writeTime(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size) {
-  if(getLocalTime(&time)) {
   char buf[9];
   snprintf(buf, sizeof(buf), "%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
   tft.fillRect(x, y, w, h, ST7735_WHITE);
   tft.setCursor(x, y);
   tft.setTextSize(size);
   tft.print(buf);
-  }
 }
 
 void writeData(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size) {
-  if(getLocalTime(&time)) {
   char bufData[9];
   int year = time.tm_year + 1900 - 2000;
   snprintf(bufData, sizeof(bufData), "%02d/%02d/%02d", time.tm_mday, time.tm_mon + 1, year);
@@ -118,7 +115,6 @@ void writeData(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8
   tft.setCursor(x, y);
   tft.setTextSize(size);
   tft.print(bufData);
-  }
 }
 
 void writeTemperature(int16_t value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size) {
@@ -162,6 +158,21 @@ void drawHistoryTemplate() {
   tft.drawBitmap(37, 78, epd_bitmap_moon, 16, 16, ST7735_WHITE, ST7735_BLACK);
   tft.drawBitmap(13, 8, epd_bitmap_arrow_left, 16, 16, ST7735_WHITE, ST7735_BLACK);
   tft.drawBitmap(133, 8, epd_bitmap_arrow_right, 16, 16, ST7735_WHITE, ST7735_BLACK);
+}
+
+void changeDate(struct tm *time, int16_t move) {
+  static int8_t x = 0;
+  x += move;
+  if(x < -5) {
+    x = -5;
+  }
+  else if(x > -1) {
+    x = -1;
+  }
+  time_t timeStamps = mktime(time);
+  uint32_t secInDay = 3600 * 24;
+  timeStamps = timeStamps + x * secInDay;
+  localtime_r(&timeStamps, time);
 }
 
 
