@@ -32,6 +32,8 @@ int getNextSectorToErase(uint32_t address);
 void clearSector(uint32_t address);
 void findPartition();
 void readRecord(uint32_t address, Record *record);
-uint16_t recordCount();
-void getDayStatistic(struct tm data, int16_t *maximum, int16_t *minimum);
+uint16_t recordCount(uint32_t currentAddress);
+uint32_t getAddressFromIndex(uint32_t index, uint32_t currentAddress);
+uint16_t firstAddressOfDay(struct tm data, uint32_t currentAddress);
+void getDayStatistic(uint16_t index, uint32_t currentAddress, int16_t *maximum, int16_t *minimum);
 

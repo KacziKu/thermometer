@@ -140,7 +140,9 @@ void displayTask(void *pvParameters) {
         int16_t maxTemperature;
         int16_t minTemperature;
         xSemaphoreTake(flashMutex, portMAX_DELAY);
-        getDayStatistic(timeHistory, &maxTemperature, &minTemperature);
+        uint32_t currentAddress = getCurrentAddress();
+        uint16_t index = firstAddressOfDay(timeHistory, currentAddress);
+        getDayStatistic(index, currentAddress, &maxTemperature, &minTemperature);
         xSemaphoreGive(flashMutex);
         writeTemperature(maxTemperature, 75, 58, 55, 15, 1);
         writeTemperature(minTemperature, 75, 83, 55, 15, 1);

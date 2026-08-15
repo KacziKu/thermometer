@@ -155,34 +155,55 @@ void readRecord(uint32_t address, Record *record) {
     DEBUG_PRINTF("Time: %d\n", record->time);
 }
 
-uint16_t recordCount() {
-    uint32_t address = getCurrentAddress();
+uint16_t recordCount(uint32_t currentAddress) {
     uint16_t count = 0;
     Record record;
     readRecord(LAST_ADDRESS, &record);
     //pierwsze zapełnienie pamięci, albo sektor 15 jest wyczyszczony
     if(record.time == EMPTY_RECORD) {
-      if(address == FIRST_ADDRESS) {
+      if(currentAddress == FIRST_ADDRESS) {
         count = 0;
       }
       else {
-        count = (address - FIRST_ADDRESS)/sizeof(Record);
+        count = (currentAddress - FIRST_ADDRESS)/sizeof(Record);
       }
     }
     //pamięć w pełni zapełniona i jest kołowo
     else {
-        uint8_t currentSektor = address/SECTOR_SIZE;
+        uint8_t currentSektor = currentAddress/SECTOR_SIZE;
         uint16_t NumberOfRecordsInSector = SECTOR_SIZE/sizeof(Record);
         count = (currentSektor - 1) * NumberOfRecordsInSector + 
-                    ((address - (currentSektor * SECTOR_SIZE))/sizeof(Record));
+                    ((currentAddress - (currentSektor * SECTOR_SIZE))/sizeof(Record));
     }
     DEBUG_PRINTF("Liczba zapisanych rekordów: %d\n", count);
     return count;
 }
 
-void getDayStatistic(struct tm data, int16_t *maximum, int16_t *minimum) {
-    int16_t min = -50;
-    int16_t max = -50;
+uint32_t getAddressFromIndex(uint32_t index, uint32_t currentAddress) {
+
+    uint32_t bufferSize = LAST_ADDRESS - FIRST_ADDRESS + sizeof(Record);
+
+    uint32_t currentSector = (currentAddress / SECTOR_SIZE) * SECTOR_SIZE;
+    uint32_t oldestAddress = currentSector + 2 * SECTOR_SIZE;
+
+    if(oldestAddress > LAST_ADDRESS) {
+        oldestAddress -= bufferSize;
+    }
+
+    Record record;
+    readRecord(oldestAddress, &record);
+    if(record.time == EMPTY_RECORD) {
+        return FIRST_ADDRESS;
+    }
+
+    uint32_t address = oldestAddress + index * sizeof(Record);
+    if(address > LAST_ADDRESS) {
+        address -= bufferSize;
+    }
+    return address;
+}
+
+uint16_t firstAddressOfDay(struct tm data, uint32_t currentAddress) {
 
     struct tm startDay;
     startDay = data;
@@ -191,27 +212,46 @@ void getDayStatistic(struct tm data, int16_t *maximum, int16_t *minimum) {
     startDay.tm_sec = 0;
     time_t start = mktime(&startDay);
 
-    struct tm endDay;
-    endDay = startDay;
-    time_t end = mktime(&endDay);
-    uint32_t SecInDay = 3600 * 24;
-    end -= SecInDay;
+    uint16_t bufferSize = recordCount(currentAddress);
+    uint16_t right = bufferSize;
+    uint16_t left = 0;
 
-    Record record;
-    for(int i = FIRST_ADDRESS; i <= LAST_ADDRESS; i += sizeof(Record)) {
-       readRecord(i, &record);
-       if(record.time >= start && record.time <= end) {
-            if(max < record.temperature) {
-                max = record.temperature;
-            }
-            if(min > record.temperature) {
-                min = record.temperature;
-            }
-       }
-       *maximum = max;
-       *minimum = min;
+    while(left < right) {
+        uint32_t mid = left + (right - left) / 2;
+        
+        Record record;
+        uint32_t address = getAddressFromIndex(mid, currentAddress);
+        readRecord(address, &record);
+
+        if(record.time < start) {
+            left = mid + 1;
+        }
+        else {
+            right = mid;
+        }
     }
+    return left;
+}
 
+void getDayStatistic(uint16_t index, uint32_t currentAddress, int16_t *maximum, int16_t *minimum) {
+    int16_t min = -5000;
+    int16_t max = -5000;
+    Record record;
 
+    uint16_t sampleInDay = 288;
 
+    for(int i = 0; i < sampleInDay; i++) {
+
+        uint32_t address = getAddressFromIndex(index + i, currentAddress);
+        readRecord(address, &record);
+
+        if(record.temperature > max) {
+            max = record.temperature;
+        }
+        if(record.temperature < min) {
+            min = record.temperature;
+        }
+    }
+    *maximum = max;
+    *minimum = min;
 }
