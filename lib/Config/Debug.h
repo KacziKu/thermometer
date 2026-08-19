@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
     #define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)

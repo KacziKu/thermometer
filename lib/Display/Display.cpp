@@ -117,34 +117,53 @@ void writeData(struct tm time, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8
   tft.print(bufData);
 }
 
-void writeTemperature(int16_t value, uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t size) {
+void writeTemperature(int16_t value, uint16_t x, uint16_t y, uint8_t w, uint8_t h, uint8_t size) {
   float temperature = value/100.2f;
   char buf[9];
-  snprintf(buf, sizeof(buf), "%.2f C", temperature);
+  int16_t x1, y1, x2;
+  uint16_t textW, textH;
+
+  snprintf(buf, sizeof(buf), "%.2f", temperature);
   tft.setCursor(x, y);
   tft.fillRect(x, y, w, h, ST77XX_WHITE);
   tft.setTextSize(size);
+
+  tft.getTextBounds(buf, x, y, &x1, &y1, &textW, &textH);
+
   if(size == 1) {
-    tft.drawBitmap(x + 29, y, epd_bitmap_small_deg, 7, 7, ST7735_WHITE, ST7735_BLACK);
+    tft.drawBitmap(x + textW, y1, epd_bitmap_small_deg, 7, 7, ST7735_WHITE, ST7735_BLACK);
+    x2 = x + textW + 7;
   }
   else if(size == 2) {
-    tft.drawBitmap(x + 58, y, epd_bitmap_big_deg, 14, 14, ST7735_WHITE, ST7735_BLACK);
+    tft.drawBitmap(x + textW, y1, epd_bitmap_big_deg, 14, 14, ST7735_WHITE, ST7735_BLACK);
+    x2 = x + textW + 14;
   }
   tft.print(buf);
+  tft.setCursor(x2, y);
+  tft.print("C");
 }
 
-uint8_t drawMarker(int16_t move) {
-  static uint8_t x;
-  tft.drawFastVLine(x, PLOT_START_Y - PLOT_HEIGHT + 1, PLOT_HEIGHT, ST7735_WHITE);
-  x += move;
-  if(x > PLOT_START_X + PLOT_WIDTH) {
-    x = PLOT_START_X + PLOT_WIDTH;
+uint8_t drawMarker(struct CycleBuffer* buffer, int16_t move) {
+  static int16_t index = 0;
+  static uint16_t x;
+  static uint16_t y;
+
+  tft.drawFastVLine(x, y + 5, 10, ST7735_WHITE);
+
+  index += move;
+  if(index >= buffer->count) {
+    index = buffer->count - 1;
   }
-  else if(x < PLOT_START_X) {
-    x = PLOT_START_X;
+  else if(index < 0) {
+    index = 0;
   }
-  tft.drawFastVLine(x, PLOT_START_Y - PLOT_HEIGHT + 1, PLOT_HEIGHT, ST7735_BLUE);
-  return (x - PLOT_START_X)/PLOT_STEP_X;
+
+  x = PLOT_START_X + index * PLOT_STEP_X;
+  y = PLOT_0 - buffer->buffer[index]/100.2f * PLOT_STEP_Y;
+
+  //tft.drawBitmap(x - 2, y + 5, epd_bitmap_arrow_plot_up, 5, 5, ST7735_WHITE ,ST7735_BLUE);
+  tft.drawFastVLine(x, y + 5, 10, ST7735_BLUE);
+  return index;
 }
 
 void drawHistoryTemplate() {

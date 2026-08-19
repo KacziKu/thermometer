@@ -37,20 +37,19 @@ void clockTimerCallback(TimerHandle_t timer) {
     xTaskNotify(displayTaskHandle, EVENT_TIME_UPDATE, eSetBits);
 }
 
-
 void sampleMeasure(void *pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
   while(1) {
     DEBUG_PRINTLN("Zbieram pomiary do rekordu");
     int16_t temperature = getTemperature();
-    struct tm timeInfo;
-    getLocalTime(&timeInfo); 
-    time_t timeSample = mktime(&timeInfo);
+    struct tm time;
+    getLocalTime(&time); 
+    time_t timeSample = mktime(&time);
 
     Record record;
     record.temperature = temperature;
     record.time = timeSample;
-    DEBUG_PRINTF("Temperatura: %d, Czas: %d\n", record.temperature, record.time);
+    Serial.printf("sampleMeasure TASK:    Temperatura: %d, Czas: %d\n", record.temperature, record.time);
     
     currentTemperature = record.temperature;
     addToBuffer(currentTemperature, &temperatureBuff);
@@ -59,7 +58,7 @@ void sampleMeasure(void *pvParameters) {
     xQueueSend(recordQueue, &record, portMAX_DELAY);
     xTaskNotify(displayTaskHandle, EVENT_NEW_TEMPERATURE, eSetBits);
 
-    xTaskDelayUntil(&lastWakeTime, 10000);
+    xTaskDelayUntil(&lastWakeTime, 5000);
   }
 }
 
@@ -95,7 +94,6 @@ void encoderTask(void *pvParameters) {
   }
 }
 
-
 void displayTask(void *pvParameters) {
   while(1) {
     uint32_t events;
@@ -115,14 +113,18 @@ void displayTask(void *pvParameters) {
 
     case PLOT:
       if(events & (EVENT_NEW_TEMPERATURE | EVENT_VIEW_CHANGE)) {
+        tft.fillRect(50, 5, 135, 15, ST7735_WHITE);
         drawAxis();
         drawPlot(&temperatureBuff);
       }
       if(events & EVENT_ENCODER) {
         drawAxis();
-        markerPosition = drawMarker(move);
+        markerPosition = drawMarker(&temperatureBuff, move);
         struct tm timePlot;
         time_t timeSec = timeBuff.buffer[markerPosition];
+        localtime_r(&timeSec, &timePlot);
+        Serial.printf("display TASK:   time: %d\n", timeBuff.buffer[markerPosition]);
+        Serial.printf("%02d:%02d:%02d\n", timePlot.tm_hour, timePlot.tm_min, timePlot.tm_sec);
         localtime_r(&timeSec, &timePlot);
         writeTemperature(temperatureBuff.buffer[markerPosition], 50, 5, 80, 15, 1);
         writeTime(timePlot, 105, 5, 80, 15, 1);
@@ -139,13 +141,15 @@ void displayTask(void *pvParameters) {
 
         int16_t maxTemperature;
         int16_t minTemperature;
+        tft.fillRect(70, 58, 55, 15, ST77XX_WHITE);
+        tft.fillRect(70, 83, 55, 15, ST77XX_WHITE);
         xSemaphoreTake(flashMutex, portMAX_DELAY);
         uint32_t currentAddress = getCurrentAddress();
         uint16_t index = firstAddressOfDay(timeHistory, currentAddress);
         getDayStatistic(index, currentAddress, &maxTemperature, &minTemperature);
         xSemaphoreGive(flashMutex);
-        writeTemperature(maxTemperature, 75, 58, 55, 15, 1);
-        writeTemperature(minTemperature, 75, 83, 55, 15, 1);
+        writeTemperature(maxTemperature, 70, 58, 55, 15, 1);
+        writeTemperature(minTemperature, 70, 83, 55, 15, 1);
       }
       break;
     }
@@ -187,7 +191,6 @@ void setup() {
   xTaskCreate(encoderTask, "Encoder Task", 1024, NULL, 0, NULL);
   xTaskCreate(displayTask, "Display Task", 4096, NULL, 0, &displayTaskHandle);
 }
-
 
 void loop() {
 
