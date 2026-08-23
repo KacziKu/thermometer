@@ -58,7 +58,7 @@ void sampleMeasure(void *pvParameters) {
     xQueueSend(recordQueue, &record, portMAX_DELAY);
     xTaskNotify(displayTaskHandle, EVENT_NEW_TEMPERATURE, eSetBits);
 
-    xTaskDelayUntil(&lastWakeTime, 5000);
+    xTaskDelayUntil(&lastWakeTime, 1000 * 60 * 5);
   }
 }
 
@@ -145,11 +145,21 @@ void displayTask(void *pvParameters) {
         tft.fillRect(70, 83, 55, 15, ST77XX_WHITE);
         xSemaphoreTake(flashMutex, portMAX_DELAY);
         uint32_t currentAddress = getCurrentAddress();
-        uint16_t index = firstAddressOfDay(timeHistory, currentAddress);
-        getDayStatistic(index, currentAddress, &maxTemperature, &minTemperature);
+        int32_t index = firstAddressOfDay(timeHistory, currentAddress);
+        printf("index %d\n", index);
+        if(index == -1) {
+          tft.setTextSize(1);
+          tft.setCursor(73, 58);
+          tft.print("No data");
+          tft.setCursor(73, 83);
+          tft.print("No data");
+        }
+        else {
+          getDayStatistic(index, currentAddress, &maxTemperature, &minTemperature);
+          writeTemperature(maxTemperature, 70, 58, 55, 15, 1);
+          writeTemperature(minTemperature, 70, 83, 55, 15, 1);
+        }
         xSemaphoreGive(flashMutex);
-        writeTemperature(maxTemperature, 70, 58, 55, 15, 1);
-        writeTemperature(minTemperature, 70, 83, 55, 15, 1);
       }
       break;
     }

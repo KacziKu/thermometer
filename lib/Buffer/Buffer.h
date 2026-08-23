@@ -7,9 +7,9 @@
 struct CycleBuffer {
     uint16_t head;
     uint16_t count;
-    float buffer[BUFFER_SIZE];
+    int64_t buffer[BUFFER_SIZE];
 };
 
-void addToBuffer(int16_t value, struct CycleBuffer* buff);
+void addToBuffer(int64_t value, struct CycleBuffer* buff);
 
 void logBuff(struct CycleBuffer* buff);

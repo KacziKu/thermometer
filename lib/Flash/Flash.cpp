@@ -203,23 +203,25 @@ uint32_t getAddressFromIndex(uint32_t index, uint32_t currentAddress) {
     return address;
 }
 
-uint16_t firstAddressOfDay(struct tm data, uint32_t currentAddress) {
-
+int32_t firstAddressOfDay(struct tm data, uint32_t currentAddress) {
+    printf("firstAddressOfDay\n");
     struct tm startDay;
     startDay = data;
     startDay.tm_hour = 0;
     startDay.tm_min = 0;
     startDay.tm_sec = 0;
+    printf("Data startowa: %02d:%02d:%02d, %02d/%02d/%02d\n", startDay.tm_hour, startDay.tm_min, startDay.tm_sec, startDay.tm_mday, startDay.tm_mon, startDay.tm_year);
     time_t start = mktime(&startDay);
 
     uint16_t bufferSize = recordCount(currentAddress);
+    printf("buffer size %d\n", bufferSize);
     uint16_t right = bufferSize;
     uint16_t left = 0;
+    Record record;
 
     while(left < right) {
         uint32_t mid = left + (right - left) / 2;
         
-        Record record;
         uint32_t address = getAddressFromIndex(mid, currentAddress);
         readRecord(address, &record);
 
@@ -230,6 +232,17 @@ uint16_t firstAddressOfDay(struct tm data, uint32_t currentAddress) {
             right = mid;
         }
     }
+    readRecord(getAddressFromIndex(left, currentAddress), &record);
+    time_t time = record.time;
+    struct tm czas;
+    localtime_r(&time, &czas);
+    printf("Data startowa: %02d:%02d:%02d, %02d/%02d/%02d\n", czas.tm_hour, czas.tm_min, czas.tm_sec, czas.tm_mday, czas.tm_mon, czas.tm_year);
+
+    if(record.time < start || record.time > start + 86400) {
+        printf("zwracam -1\n");
+        return -1;
+    }
+    printf("zwracam %d\n", left);
     return left;
 }
 
