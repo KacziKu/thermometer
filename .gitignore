@@ -3,3 +3,5 @@
 *~
 *.swp
 *.swo
+
+lib/Config/wifi.h
